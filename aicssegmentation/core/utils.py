@@ -135,7 +135,7 @@ def get_middle_frame(struct_img_smooth, method='z'):
         z_profile = np.zeros((bw.shape[0],),dtype=int)
         for zz in range(bw.shape[0]):
             z_profile[zz] = np.count_nonzero(bw[zz,:,:])
-        mid_frame = round(histogram_otsu(z_profile)*bw.shape[0]).astype(int)
+        mid_frame = round(histogram_otsu(z_profile)*bw.shape[0])
         
     elif method == 'z':
         mid_frame = struct_img_smooth.shape[0] // 2

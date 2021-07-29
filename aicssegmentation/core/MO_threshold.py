@@ -21,7 +21,7 @@ def MO(structure_img_smooth, global_thresh_method, object_minArea, extra_criteri
     bw_high_level = np.zeros_like(bw_low_level)
     lab_low, num_obj = label(bw_low_level, return_num=True, connectivity=1)
     if extra_criteria:
-        local_cutoff = 0.333 * threshold_otsu(structure_img_smooth)
+        local_cutoff = 0.444 * threshold_otsu(structure_img_smooth)
         for idx in range(num_obj):
             single_obj = lab_low==(idx+1)
             local_otsu = threshold_otsu(structure_img_smooth[single_obj>0])
