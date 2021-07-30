@@ -29,7 +29,7 @@ from tkinter import simpledialog
 from skimage.restoration import rolling_ball
 from skimage.restoration import ellipsoid_kernel
 from colorama import Fore
-
+from skimage.exposure import rescale_intensity
 # Loading Data, loading Visualization Platform and make some background functions
 
 #Ignore warnings issued by skimage through conversion to uint8
@@ -191,8 +191,14 @@ class cell_segment:
         for t in pb:
             pb.set_description("Smooth and background substraction")
             img = self.image[t].copy()
+
+            #Clip data and remove extreme bright speckles
+            vmin, vmax = np.percentile(img, q=(0.5, 95))
+
+            clipped_img = rescale_intensity(img, in_range=(vmin, vmax), out_range=np.uint16)
+
             #self.structure_img_smooth[t] = edge_preserving_smoothing_3d(img, numberOfIterations=5)
-            self.structure_img_smooth[t] = image_smoothing_gaussian_3d(img, sigma=self.smooth_param)
+            self.structure_img_smooth[t] = image_smoothing_gaussian_3d(clipped_img, sigma=self.smooth_param)
 
             #Use rolling_ball to remove background
             background = rolling_ball(self.structure_img_smooth[t], kernel=ellipsoid_kernel((20, 1, 1),0.2))

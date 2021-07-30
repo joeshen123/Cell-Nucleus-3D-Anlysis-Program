@@ -117,6 +117,7 @@ ax = sns.swarmplot(x="condition", y="Intensity",data=Control_drug_Final, hue = '
 #fig.set(xticklabels = labels)
 
 ax.tick_params(labelsize= 16)
+ax.set(xlabel=None)
 plt.ylabel('Intensity', fontsize=14, fontweight = 'bold')
 ax.get_legend().remove()
 plt.rcParams['axes.labelweight'] = 'bold'
