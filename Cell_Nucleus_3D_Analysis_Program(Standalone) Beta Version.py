@@ -193,14 +193,14 @@ class cell_segment:
             img = self.image[t].copy()
 
             #Clip data and remove extreme bright speckles
-            vmin, vmax = np.percentile(img, q=(0.5, 95))
+            vmin, vmax = np.percentile(img, q=(0.5, 99.5))
 
             clipped_img = rescale_intensity(img, in_range=(vmin, vmax), out_range=np.uint16)
 
             #self.structure_img_smooth[t] = edge_preserving_smoothing_3d(img, numberOfIterations=5)
             self.structure_img_smooth[t] = image_smoothing_gaussian_3d(clipped_img, sigma=self.smooth_param)
 
-            #Use rolling_ball to remove background
+            #Use rolling_ball to remove background in Z direction
             background = rolling_ball(self.structure_img_smooth[t], kernel=ellipsoid_kernel((20, 1, 1),0.2))
             self.structure_img_smooth[t] = self.structure_img_smooth[t] - background 
 
