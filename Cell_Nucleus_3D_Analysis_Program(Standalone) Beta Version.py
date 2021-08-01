@@ -201,7 +201,7 @@ class cell_segment:
             self.structure_img_smooth[t] = image_smoothing_gaussian_3d(clipped_img, sigma=self.smooth_param)
 
             #Use rolling_ball to remove background in Z direction
-            background = rolling_ball(self.structure_img_smooth[t], kernel=ellipsoid_kernel((20, 1, 1),0.2))
+            background = rolling_ball(self.structure_img_smooth[t], kernel=ellipsoid_kernel((20, 1, 1),0.1))
             self.structure_img_smooth[t] = self.structure_img_smooth[t] - background 
 
         
