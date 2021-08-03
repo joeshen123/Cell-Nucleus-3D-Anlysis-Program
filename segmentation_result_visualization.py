@@ -21,7 +21,7 @@ seg_name = filez[2]
 
 f = h5py.File(filename, 'r')
 
-lmb1_image = f['561 Channel'][:]
+lmb1_image = f['488 Channel'][:]
 cpla2_intensity_image = f['561 Channel'][:]
 
 f1 = h5py.File(seg_name, 'r')

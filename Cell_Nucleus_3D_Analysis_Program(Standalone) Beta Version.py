@@ -245,7 +245,7 @@ class cell_segment:
             #Get seed map
             seed = get_3dseed_from_mid_frame(bw_mid_z,bw.shape, mid_z,2000, bg_seed=False)
             
-            edge= scharr(self.structure_img_smooth[t])
+            edge= scharr(self.image[t])
             seg = watershed(edge, markers=label(seed), mask=bw, watershed_line=True)
             seg = clear_border(seg, mask = mask)
             
@@ -258,7 +258,7 @@ class cell_segment:
 
 ## Track and quantify nucleus geometry (e.g. volume) and protein binding over time
 class cell_tracking:
-    def __init__ (self, segmented_image_seq, intensity_image_stack, smooth_sigma, x_vol, y_vol, z_vol,cell_type):
+    def __init__ (self, segmented_image_seq, intensity_image_stack, smooth_sigma, x_vol, y_vol, z_vol):
         self.labelled_stack = segmented_image_seq
         self.segmented_image_crop = self.labelled_stack.copy()
         self.contour_image_crop = np.zeros(self.labelled_stack.shape)
@@ -270,7 +270,7 @@ class cell_tracking:
         self.x_vol = x_vol
         self.y_vol = y_vol
         self.z_vol = z_vol
-        self.cell_type = cell_type
+        
     # Function to  smooth intesnity image stack
     def intensity_stack_smooth (self):
         pb = tqdm(range(self.intensity_image_stack.shape[0]), bar_format="{l_bar}%s{bar}%s{r_bar}" % (Fore.YELLOW, Fore.RESET))
@@ -312,15 +312,11 @@ class cell_tracking:
                 mid_section_area = max([region.area*(self.x_vol*self.y_vol) for region in measure.regionprops(label(mid_nucleus_image))])
                 #segmented_image_shell= np.logical_xor(erosion(mid_nucleus_image,selem=disk(5)),erosion(mid_nucleus_image, selem=disk(2)))
                 
-                # Draw different contour based on different cells
-                if self.cell_type == 'A549':
-                  segmented_image_shell= np.logical_xor(mid_nucleus_image,erosion(mid_nucleus_image, selem=disk(3)))
-                  bg_segmented_image_shell = np.logical_xor(erosion(mid_nucleus_image, selem=disk(9)), erosion(mid_nucleus_image, selem=disk(12)))
+                #Draw contour
+                segmented_image_shell= np.logical_xor(erosion(mid_nucleus_image, selem=disk(2)),erosion(mid_nucleus_image, selem=disk(5)))
+                bg_segmented_image_shell = np.logical_xor(erosion(mid_nucleus_image, selem=disk(12)), erosion(mid_nucleus_image, selem=disk(15)))
                 
-                else:
-                  segmented_image_shell= np.logical_xor(erosion(mid_nucleus_image,selem=disk(2)),erosion(mid_nucleus_image, selem=disk(5)))
-                  bg_segmented_image_shell = np.logical_xor(erosion(mid_nucleus_image, selem=disk(12)), erosion(mid_nucleus_image, selem=disk(15)))
-
+                
                 labels = region.label
                 intensity_single = self.intensity_image_stack[n]
                 intensity_image = intensity_single[mid_z]
@@ -373,30 +369,30 @@ class cell_tracking:
             remain_track_list.append(remain_tracks)
         
         print(remain_track_list)
-        #Find common frames among different tracks
+        #Find all frames (union) among different tracks
         if len(remain_track_list) > 1:
-          common_tracks = set.intersection(*map(set, remain_track_list))
-          common_tracks = list(map(int, common_tracks))
+          union_tracks = set.union(*map(set, remain_track_list))
+          union_tracks = list(map(int, union_tracks))
         elif len(remain_track_list) == 1:
-          common_tracks = remain_track_list[0]
-          common_tracks = list(map(int, common_tracks))
+          union_tracks = remain_track_list[0]
+          union_tracks = list(map(int, union_tracks))
         else: 
-          common_tracks = list(np.arange(self.t)) 
+          union_tracks = list(np.arange(self.t)) 
         
-        print(common_tracks)
+        print(union_tracks)
         #loop through all time, only keep objects that are in tracks
         pb = tqdm(range(self.t), bar_format="{l_bar}%s{bar}%s{r_bar}" % (Fore.GREEN, Fore.RESET))
         for t in pb:
             pb.set_description("Remove broken objects from segmentation")
-            if t in common_tracks:
+            if t in union_tracks:
              table_t = self.track_table.loc[self.track_table.frame == t]
              seg_t = self.labelled_stack[t]
              self.segmented_image_crop[t] = clean_segmentation(table_t, seg_t)
             
             else:
               if t == 0:
-                table_t = self.track_table.loc[self.track_table.frame == min(common_tracks)]
-                seg_t = self.labelled_stack[min(common_tracks)]
+                table_t = self.track_table.loc[self.track_table.frame == min(union_tracks)]
+                seg_t = self.labelled_stack[min(union_tracks)]
                 self.segmented_image_crop[t] = clean_segmentation(table_t, seg_t)
 
               else:
@@ -420,15 +416,10 @@ class cell_tracking:
                 
                 mid_nucleus_image = nucleus_image[mid_z,:,:]
                 
-                # Draw different contour based on different cells
-                if self.cell_type == 'A549':
-                  segmented_image_shell= np.logical_xor(mid_nucleus_image,erosion(mid_nucleus_image, selem=disk(3)))
-                  bg_segmented_image_shell = np.logical_xor(erosion(mid_nucleus_image, selem=disk(9)), erosion(mid_nucleus_image, selem=disk(12)))
-                
-                
-                else:
-                  segmented_image_shell= np.logical_xor(erosion(mid_nucleus_image,selem=disk(2)),erosion(mid_nucleus_image, selem=disk(5)))
-                  bg_segmented_image_shell = np.logical_xor(erosion(mid_nucleus_image, selem=disk(12)), erosion(mid_nucleus_image, selem=disk(15)))
+                # Draw contours
+        
+                segmented_image_shell= np.logical_xor(erosion(mid_nucleus_image,selem=disk(2)),erosion(mid_nucleus_image, selem=disk(5)))
+                bg_segmented_image_shell = np.logical_xor(erosion(mid_nucleus_image, selem=disk(12)), erosion(mid_nucleus_image, selem=disk(15)))
 
                 self.contour_image_crop[t,mid_z,:,:] += segmented_image_shell
                 self.contour_image_crop[t,mid_z,:,:] += bg_segmented_image_shell
@@ -454,7 +445,7 @@ track.img_norm_smooth()
 track.threshold_Time()        
 
 #Tracking and Quantification
-Segment_tracker = cell_tracking(track.segmented_object_image, cpla2_intensity_image,smooth_sigma = 2, x_vol = 0.29, y_vol= 0.29, z_vol = 1.6,cell_type = cells)
+Segment_tracker = cell_tracking(track.segmented_object_image, cpla2_intensity_image,smooth_sigma = 2, x_vol = 0.29, y_vol= 0.29, z_vol = 1.6)
 Segment_tracker.intensity_stack_smooth()
 Segment_tracker.create_table_regions()
 Segment_tracker.tracking()
